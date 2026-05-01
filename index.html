@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Business MP3 Player Pro</title>
+    <link rel="icon" type="image/png" href="https://via.placeholder.com/32">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eceff1; display: flex; flex-direction: column; align-items: center; padding: 40px; }
+        .player-container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 400px; }
+        .controls-row { margin: 15px 0; display: flex; justify-content: space-between; gap: 5px; }
+        button { flex: 1; padding: 8px; cursor: pointer; border: 1px solid #ddd; border-radius: 4px; background: #fff; }
+        button.active { background: #007bff; color: white; border-color: #0056b3; }
+        #playlist { list-style: none; padding: 0; margin-top: 20px; max-height: 200px; overflow-y: auto; border-top: 1px solid #eee; }
+        #playlist li { padding: 12px; border-bottom: 1px solid #f9f9f9; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; }
+        #playlist li.playing { background: #e3f2fd; color: #007bff; font-weight: bold; }
+        .ad-placeholder { margin-top: 20px; border: 1px dashed #bbb; color: #888; text-align: center; padding: 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div class="player-container">
+        <h3>🎵 YAH MELODY PLAYER</h3>
+        
+        <input type="file" id="fileInput" accept="audio/mp3" multiple style="width: 100%; margin-bottom: 15px;">
+        
+        <audio id="audioPlayer" controls style="width: 100%;"></audio>
+        
+        <div class="controls-row">
+            <button id="btnRepeatNone" class="active">No Repeat</button>
+            <button id="btnRepeatOne">Repeat Single</button>
+            <button id="btnRepeatAll">Repeat Playlist</button>
+        </div>
+
+        <div id="status" style="font-size: 13px; color: #555; margin: 10px 0;">Queue is empty</div>
+        
+        <ul id="playlist"></ul>
+
+        <!-- AdSense Placeholder -->
+        <div class="ad-placeholder">AdSense Unit Area</div>
+    </div>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const fileInput = document.getElementById('fileInput');
+        const playlistUI = document.getElementById('playlist');
+        const statusText = document.getElementById('status');
+
+        let playlist = [];
+        let currentIndex = 0;
+        let repeatMode = 'none'; // Options: 'none', 'one', 'all'
+
+        // 1. Handle File Uploads
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                playlist.push({
+                    name: file.name,
+                    url: URL.createObjectURL(file)
+                });
+            });
+            renderPlaylist();
+            if (playlist.length > 0 && audioPlayer.paused && !audioPlayer.src) {
+                loadTrack(0);
+            }
+        });
+
+        // 2. Render UI
+        function renderPlaylist() {
+            playlistUI.innerHTML = '';
+            playlist.forEach((track, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${track.name}`;
+                if (index === currentIndex) li.className = 'playing';
+                li.onclick = () => {
+                    currentIndex = index;
+                    loadTrack(currentIndex);
+                    audioPlayer.play();
+                };
+                playlistUI.appendChild(li);
+            });
+        }
+
+        // 3. Load a Track
+        function loadTrack(index) {
+            currentIndex = index;
+            audioPlayer.src = playlist[currentIndex].url;
+            statusText.textContent = "Now Playing: " + playlist[currentIndex].name;
+            renderPlaylist();
+        }
+
+        // 4. Logic for "What happens next?"
+        audioPlayer.addEventListener('ended', () => {
+            if (repeatMode === 'one') {
+                // Replay same song
+                audioPlayer.play();
+            } else if (repeatMode === 'all') {
+                // Go to next or loop back to start
+                currentIndex = (currentIndex + 1) % playlist.length;
+                loadTrack(currentIndex);
+                audioPlayer.play();
+            } else if (repeatMode === 'none') {
+                // Play next until end of list
+                if (currentIndex < playlist.length - 1) {
+                    currentIndex++;
+                    loadTrack(currentIndex);
+                    audioPlayer.play();
+                }
+            }
+        });
+
+        // 5. Repeat Mode Toggles
+        const btns = {
+            none: document.getElementById('btnRepeatNone'),
+            one: document.getElementById('btnRepeatOne'),
+            all: document.getElementById('btnRepeatAll')
+        };
+
+        function setRepeat(mode) {
+            repeatMode = mode;
+            Object.values(btns).forEach(b => b.classList.remove('active'));
+            btns[mode].classList.add('active');
+        }
+
+        btns.none.onclick = () => setRepeat('none');
+        btns.one.onclick = () => setRepeat('one');
+        btns.all.onclick = () => setRepeat('all');
+
+    </script>
+</body>
+</html>
